@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zapisy na konsultacje</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+        
+        .day-section {
+            margin-bottom: 40px;
+            border: 2px solid #f0f0f0;
+            border-radius: 15px;
+            padding: 20px;
+            background: #fafafa;
+        }
+        
+        .day-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .day-icon {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+        
+        .day-title {
+            color: #333;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .day-info {
+            color: #666;
+            font-size: 0.9em;
+            margin-left: auto;
+        }
+        
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .time-slot {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .time-slot:hover:not(.taken) {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        
+        .time-slot.taken {
+            background: #f5f5f5;
+            border-color: #ddd;
+            cursor: not-allowed;
+        }
+        
+        .time {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        .time-slot.taken .time {
+            color: #999;
+        }
+        
+        .student-name {
+            color: #666;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+        
+        .available {
+            color: #4CAF50;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        .modal h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .modal input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+        
+        .modal input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn-confirm {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-confirm:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-cancel {
+            background: #e0e0e0;
+            color: #666;
+        }
+        
+        .btn-cancel:hover {
+            background: #d0d0d0;
+        }
+        
+        .legend {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-box {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid;
+        }
+        
+        .legend-box.available {
+            background: white;
+            border-color: #e0e0e0;
+        }
+        
+        .legend-box.taken {
+            background: #f5f5f5;
+            border-color: #ddd;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            .time-slots {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📅 Zapisy na konsultacje</h1>
+        <p class="subtitle">Wybierz wolny termin i wpisz swoje imię i nazwisko</p>
+        
+        <!-- Czwartek - stacjonarne -->
+        <div class="day-section">
+            <div class="day-header">
+                <div class="day-icon">🏫</div>
+                <div>
+                    <div class="day-title">Czwartek - Stacjonarnie</div>
+                    <div class="day-info">7:00 - 8:30 | 15 minut na osobę</div>
+                </div>
+            </div>
+            <div class="time-slots" id="thursday-slots"></div>
+        </div>
+        
+        <!-- Piątek - online -->
+        <div class="day-section">
+            <div class="day-header">
+                <div class="day-icon">💻</div>
+                <div>
+                    <div class="day-title">Piątek - Online</div>
+                    <div class="day-info">18:00 - 19:00 | 15 minut na osobę</div>
+                </div>
+            </div>
+            <div class="time-slots" id="friday-slots"></div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box available"></div>
+                <span>Wolny termin</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box taken"></div>
+                <span>Zajęty termin</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal do wpisywania imienia -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2>Zapisz się na konsultacje</h2>
+            <p style="color: #666; margin-bottom: 15px;">Termin: <strong id="selected-time"></strong></p>
+            <input type="text" id="student-name" placeholder="Wpisz swoje imię i nazwisko" autofocus>
+            <div class="modal-buttons">
+                <button class="btn btn-cancel" onclick="closeModal()">Anuluj</button>
+                <button class="btn btn-confirm" onclick="confirmBooking()">Zapisz się</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let selectedSlot = null;
+        let bookings = JSON.parse(localStorage.getItem('consultationBookings')) || {};
+        
+        // Generowanie slotów dla czwartku (7:00 - 8:30)
+        function generateThursdaySlots() {
+            const container = document.getElementById('thursday-slots');
+            let hour = 7;
+            let minute = 0;
+            
+            while (hour < 8 || (hour === 8 && minute <= 15)) {
+                const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                const slotId = `thu-${timeString}`;
+                
+                const slot = createTimeSlot(timeString, slotId, 'Czwartek (stacjonarnie)');
+                container.appendChild(slot);
+                
+                minute += 15;
+                if (minute === 60) {
+                    minute = 0;
+                    hour++;
+                }
+            }
+        }
+        
+        // Generowanie slotów dla piątku (18:00 - 19:00)
+        function generateFridaySlots() {
+            const container = document.getElementById('friday-slots');
+            let hour = 18;
+            let minute = 0;
+            
+            while (hour < 19) {
+                const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                const slotId = `fri-${timeString}`;
+                
+                const slot = createTimeSlot(timeString, slotId, 'Piątek (online)');
+                container.appendChild(slot);
+                
+                minute += 15;
+                if (minute === 60) {
+                    minute = 0;
+                    hour++;
+                }
+            }
+        }
+        
+        // Tworzenie pojedynczego slotu
+        function createTimeSlot(time, id, day) {
+            const slot = document.createElement('div');
+            slot.className = 'time-slot';
+            slot.dataset.id = id;
+            slot.dataset.time = time;
+            slot.dataset.day = day;
+            
+            const booking = bookings[id];
+            
+            if (booking) {
+                slot.classList.add('taken');
+                slot.innerHTML = `
+                    <div class="time">${time}</div>
+                    <div class="student-name">👤 ${booking}</div>
+                `;
+                slot.onclick = null;
+            } else {
+                slot.innerHTML = `
+                    <div class="time">${time}</div>
+                    <div class="available">✓ Wolne</div>
+                `;
+                slot.onclick = () => openModal(id, time, day);
+            }
+            
+            return slot;
+        }
+        
+        // Otwieranie modala
+        function openModal(slotId, time, day) {
+            selectedSlot = slotId;
+            document.getElementById('selected-time').textContent = `${day}, ${time}`;
+            document.getElementById('student-name').value = '';
+            document.getElementById('modal').classList.add('active');
+            document.getElementById('student-name').focus();
+        }
+        
+        // Zamykanie modala
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            selectedSlot = null;
+        }
+        
+        // Potwierdzanie zapisu
+        function confirmBooking() {
+            const studentName = document.getElementById('student-name').value.trim();
+            
+            if (!studentName) {
+                alert('Proszę wpisać imię i nazwisko');
+                return;
+            }
+            
+            bookings[selectedSlot] = studentName;
+            localStorage.setItem('consultationBookings', JSON.stringify(bookings));
+            
+            closeModal();
+            refreshSlots();
+        }
+        
+        // Odświeżanie slotów
+        function refreshSlots() {
+            document.getElementById('thursday-slots').innerHTML = '';
+            document.getElementById('friday-slots').innerHTML = '';
+            generateThursdaySlots();
+            generateFridaySlots();
+        }
+        
+        // Obsługa klawisza Enter w input
+        document.getElementById('student-name').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                confirmBooking();
+            }
+        });
+        
+        // Obsługa klawisza Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+        
+        // Inicjalizacja
+        generateThursdaySlots();
+        generateFridaySlots();
+    </script>
+</body>
+</html>
